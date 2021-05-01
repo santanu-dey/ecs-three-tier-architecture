@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: >
+    This template deploys a sample 3-tier application using Amazon ECS
+
+Parameters:
+  ResourceBucket:
+    Type: String
+    Description: S3 Bucket where the deployent dependent cloudformation resources are stored
+
+Resources:
+
+  # IAM Roles
+  IAMRoles:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL:  !Join ['', ['https://', !Ref 'ResourceBucket', '.s3.amazonaws.com', '/dependencies/iam-template.yaml']] 
+
+  # Networking
+  Networking:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL:  !Join ['', ['https://', !Ref 'ResourceBucket', '.s3.amazonaws.com', /dependencies/networking-template.yaml]]
+
+
+  # ECSCluster
+  ECSCluster:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL:  !Join ['', ['https://', !Ref 'ResourceBucket', '.s3.amazonaws.com', /dependencies/ecs-template.yaml]]
+
+Outputs:
+  ResourceBucket:
+    Value: !Ref ResourceBucket         
+    Description: S3 Bucket where the deployent dependent cloudformation resources are storedYou can refer to any resource from the template.

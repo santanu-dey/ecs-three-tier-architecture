@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: >
+    This template contains networking elements
+
+Resources:
+
+  rVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.1.0.0/20
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+
+
+Outputs:
+  VPC:
+    Value: !Ref rVpc
