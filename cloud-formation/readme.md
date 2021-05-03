@@ -38,7 +38,7 @@ aws s3 sync . s3://cloud-formation-template --exclude ".*" --profile bootcamp
 
 Make the templates public 
 ```
-aws s3api put-object-acl --bucket cloud-formation-template-630104356725 --key dependencies/networking-template.yaml --acl public-read --profile bootcamp
+aws s3api put-object-acl --bucket cloud-formation-template --key dependencies/networking-template.yaml --acl public-read --profile bootcamp
 ```
 
 3. Now you can deploy the stack
@@ -47,7 +47,7 @@ aws s3api put-object-acl --bucket cloud-formation-template-630104356725 --key de
 aws cloudformation create-stack \
 --stack-name ecs-three-tier-stack \
 --template-body file://ecs-three-tier-architecture-base.yaml  \
---parameters ParameterKey=ResourceBucket,ParameterValue=s3://cloud-formation-template-630104356725 \
+--parameters ParameterKey=ResourceBucket,ParameterValue=s3://cloud-formation-template \
 --profile bootcamp
 ```
 ```
