@@ -50,7 +50,7 @@ aws cloudformation create-stack \
 --parameters ParameterKey=ResourceBucket,ParameterValue=s3://cloud-formation-template \
 --profile bootcamp
 ```
-```
+
 
 ```
  aws cloudformation create-stack \
@@ -81,3 +81,13 @@ aws cloudformation describe-stack-events --stack-name ecs-three-tier-stack \
 ```
 aws cloudformation delete-stack --stack-name ecs-three-tier-stack --profile bootcamp
 ```
+
+
+
+#TODO
+
+* add tags to resources 
+* use web-app image for the moment in tasks 
+
+
+
