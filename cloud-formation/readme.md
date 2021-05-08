@@ -36,30 +36,23 @@ Then repeat the command without dry run
 aws s3 sync . s3://cloud-formation-template --exclude ".*" --profile bootcamp
 ```
 
-Make the templates public 
+Make the dependent templates publicly readable 
 ```
 aws s3api put-object-acl --bucket cloud-formation-template --key dependencies/networking-template.yaml --acl public-read --profile bootcamp
 ```
 
 3. Now you can deploy the stack
 
+Either of the commands below should work
+
 ```
 aws cloudformation create-stack \
 --stack-name ecs-three-tier-stack \
---template-body file://ecs-three-tier-architecture-base.yaml  \
---parameters ParameterKey=ResourceBucket,ParameterValue=s3://cloud-formation-template \
---profile bootcamp
-```
-
-
-```
- aws cloudformation create-stack \
---stack-name ecs-three-tier-stack \
---template-body file://ecs-three-tier-architecture-base.yaml  \
+--template-url https://cloud-formation-template.s3.amazonaws.com/ecs-three-tier-architecture-base.yaml  \
 --parameters ParameterKey=ResourceBucket,ParameterValue=cloud-formation-template \
+--capabilities CAPABILITY_NAMED_IAM \
 --profile bootcamp
 ```
-
 
 
 
@@ -86,8 +79,10 @@ aws cloudformation delete-stack --stack-name ecs-three-tier-stack --profile boot
 
 #TODO
 
-* add tags to resources 
-* use web-app image for the moment in tasks 
+* what exact access are required by the CLI user profile? 
+* add tags to resources
+* add caching
+* 
 
 
 

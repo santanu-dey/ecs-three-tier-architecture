@@ -3,6 +3,14 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: >
     This template contains ECS elements
 
+Parameters:
+
+  ResourceTag:
+    Description: This value will be used for tagging all resources in the stack
+    Type: String
+    Default: ecs3tier
+    
+
 Resources:
 
   ECSCluster:

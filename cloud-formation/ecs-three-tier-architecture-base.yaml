@@ -8,6 +8,38 @@ Parameters:
     Type: String
     Description: S3 Bucket where the deployent dependent cloudformation resources are stored
 
+  VpcCIDR:
+    Description: Please enter the IP range (CIDR notation) for this VPC
+    Type: String
+    Default: 10.1.0.0/16
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    MinLength: 9
+    MaxLength: 18
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x
+
+  Tier1Subnet1CIDR:
+    Description: Please enter the IP range (CIDR notation) for this Subnet
+    Type: String
+    Default: 10.1.1.0/24
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    MinLength: 9
+    MaxLength: 18
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x
+
+  Tier2Subnet1CIDR:
+    Description: Please enter the IP range (CIDR notation) for this Subnet
+    Type: String
+    Default: 10.1.2.0/24
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    MinLength: 9
+    MaxLength: 18
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x
+
+  ResourceTag:
+    Description: This value will be used for tagging all resources in the stack
+    Type: String
+    Default: ecs3tier
+
 Resources:
 
   # IAM Roles
@@ -15,19 +47,27 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL:  !Join ['', ['https://', !Ref 'ResourceBucket', '.s3.amazonaws.com', '/dependencies/iam-template.yaml']] 
+      Parameters: 
+        ResourceTag: !Ref ResourceTag
 
   # Networking
   Networking:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL:  !Join ['', ['https://', !Ref 'ResourceBucket', '.s3.amazonaws.com', /dependencies/networking-template.yaml]]
-
+      Parameters: 
+        VpcCIDR: !Ref VpcCIDR
+        Tier1Subnet1CIDR: !Ref Tier1Subnet1CIDR
+        Tier1Subnet2CIDR: !Ref Tier1Subnet2CIDR
+        ResourceTag: !Ref ResourceTag
 
   # ECSCluster
   ECSCluster:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL:  !Join ['', ['https://', !Ref 'ResourceBucket', '.s3.amazonaws.com', /dependencies/ecs-template.yaml]]
+      Parameters: 
+        ResourceTag: !Ref ResourceTag
 
 Outputs:
   ResourceBucket:
