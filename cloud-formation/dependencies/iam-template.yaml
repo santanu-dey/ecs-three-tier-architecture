@@ -26,11 +26,35 @@ Resources:
         PolicyDocument:
           Statement:
           - Effect: Allow
-            Action: ['elasticloadbalancing:DeregisterInstancesFromLoadBalancer', 'elasticloadbalancing:DeregisterTargets',
-              'elasticloadbalancing:Describe*', 'elasticloadbalancing:RegisterInstancesWithLoadBalancer',
-              'elasticloadbalancing:RegisterTargets', 'ec2:Describe*', 'ec2:AuthorizeSecurityGroupIngress']
+            Action: ['elasticloadbalancing:DeregisterInstancesFromLoadBalancer', 
+            'elasticloadbalancing:DeregisterTargets',
+            'elasticloadbalancing:Describe*', 
+            'elasticloadbalancing:RegisterInstancesWithLoadBalancer',
+            'elasticloadbalancing:RegisterTargets', 
+            'ec2:Describe*', 
+            'ec2:AuthorizeSecurityGroupIngress',
+            'application-autoscaling:*',
+            'ecs:DescribeServices',
+            'ecs:UpdateService',
+            'cloudwatch:DescribeAlarms',
+            'cloudwatch:PutMetricAlarm',
+            'cloudwatch:DeleteAlarms',
+            'cloudwatch:DescribeAlarmHistory',
+            'cloudwatch:DescribeAlarmsForMetric',
+            'cloudwatch:GetMetricStatistics',
+            'cloudwatch:ListMetrics',
+            'cloudwatch:DisableAlarmActions',
+            'cloudwatch:EnableAlarmActions',
+            'iam:CreateServiceLinkedRole',
+            'sns:CreateTopic',
+            'sns:Subscribe',
+            'sns:Get*',
+            'sns:List*'
+          ]
             Resource: '*'
 
 Outputs:
   ECSServiceRole:
     Value: !Ref ECSServiceRole
+    # Export: 
+    #   Name: ECSServiceRoleForECS3TierStack

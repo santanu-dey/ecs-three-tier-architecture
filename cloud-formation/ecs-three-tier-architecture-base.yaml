@@ -81,14 +81,19 @@ Resources:
   # IAM Roles
   IAMRoles:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
     Properties:
       TemplateURL:  !Join ['', ['https://', !Ref 'ResourceBucket', '.s3.amazonaws.com', '/dependencies/iam-template.yaml']] 
       Parameters: 
         ResourceTag: !Ref ResourceTag
+      Tags:
+      - Key: resource-label
+        Value: !Ref ResourceTag
 
   # Networking
   Networking:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
     Properties:
       TemplateURL:  !Join ['', ['https://', !Ref 'ResourceBucket', '.s3.amazonaws.com', /dependencies/networking-template.yaml]]
       Parameters: 
@@ -100,14 +105,26 @@ Resources:
         Tier3Subnet1CIDR: !Ref Tier3Subnet1CIDR
         Tier3Subnet2CIDR: !Ref Tier3Subnet2CIDR
         ResourceTag: !Ref ResourceTag
+      Tags:
+      - Key: resource-label
+        Value: !Ref ResourceTag
 
   # ECSCluster
   ECSCluster:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
     Properties:
       TemplateURL:  !Join ['', ['https://', !Ref 'ResourceBucket', '.s3.amazonaws.com', /dependencies/ecs-template.yaml]]
       Parameters: 
         ResourceTag: !Ref ResourceTag
+      Parameters: 
+        ECSServiceRole: 
+          Fn::GetAtt: 
+          - IAMRoles
+          - Outputs.ECSServiceRole
+      Tags:
+      - Key: resource-label
+        Value: !Ref ResourceTag
 
 Outputs:
   ResourceBucket:

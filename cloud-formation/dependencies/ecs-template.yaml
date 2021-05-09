@@ -9,7 +9,10 @@ Parameters:
     Description: This value will be used for tagging all resources in the stack
     Type: String
     Default: ecs3tier
-    
+  ECSServiceRole:
+    Description: IAM Role used for creating the ECS cluster
+    Type: String
+
 
 Resources:
 
