@@ -122,6 +122,26 @@ Resources:
           Fn::GetAtt: 
           - IAMRoles
           - Outputs.ECSServiceRole
+        Tier1Subnet1:
+          Fn::GetAtt:  
+          - Networking
+          - Outputs.Tier1Subnet1
+        Tier1Subnet2: 
+          Fn::GetAtt:  
+          - Networking
+          - Outputs.Tier1Subnet2
+        Tier2Subnet1: 
+          Fn::GetAtt:
+          - Networking
+          - Outputs.Tier2Subnet1
+        Tier2Subnet2: 
+          Fn::GetAtt:
+          - Networking
+          - Outputs.Tier2Subnet2
+        VPC: 
+          Fn::GetAtt:
+          - Networking
+          - Outputs.Tier2Subnet1
       Tags:
       - Key: resource-label
         Value: !Ref ResourceTag

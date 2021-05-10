@@ -3,34 +3,188 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: >
     This template contains ECS elements
 
+#------------------------------------------------------------------------------
+# Paramenters
+#------------------------------------------------------------------------------
+
 Parameters:
 
   ResourceTag:
     Description: This value will be used for tagging all resources in the stack
     Type: String
     Default: ecs3tier
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id'
   ECSServiceRole:
     Description: IAM Role used for creating the ECS cluster
     Type: String
+    Default: iam-stack-ECSServiceRole-128MXW4J6T4NK
+    # default be deleted
+  VPC:
+    Description: Reference to the VPC
+    Type: String
+    Default: vpc-032eb6f22e899ffc4
+    # default be deleted
+  Tier1Subnet1:
+    Description: Reference to Tier1 Subnet 1
+    Type: String
+    Default: subnet-0d403d6c7cd90d26b
+    # default be deleted
+  Tier1Subnet2:
+    Description: Reference to Tier1 Subnet 2
+    Type: String
+    Default: subnet-07752117c27f6b8d5
+    # default be deleted
+  Tier2Subnet1:
+    Description: Reference to Tier2 Subnet 1
+    Type: String
+    Default: subnet-0243f119c193903c1
+    # default be deleted
+  Tier2Subnet2:
+    Description: Reference to Tier2 Subnet 2
+    Type: String
+    Default: subnet-008ab0ece34605a78
+    # default be deleted
 
+#------------------------------------------------------------------------------
+# Resources
+#------------------------------------------------------------------------------
 
 Resources:
 
+#------------------------------------------------------------------------------
+# ECS Cluster scaling configurations 
+#------------------------------------------------------------------------------
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles: [!Ref 'ECSServiceRole']
+
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        ImageId: !Ref LatestAmiId
+        InstanceType: "t3.medium"
+        IamInstanceProfile: 
+          Name: !Ref EC2InstanceProfile
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash -xe
+            echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
+
+  AutoScalingGroup1:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      AvailabilityZones:
+        - !Select [0, !GetAZs ""]
+      HealthCheckGracePeriod: 60
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      NewInstancesProtectedFromScaleIn: true
+      MaxSize: "10"
+      MinSize: "0"
+      DesiredCapacity: "0"
+  
+  AutoScalingGroup2:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      AvailabilityZones:
+        - !Select [0, !GetAZs ""]
+      HealthCheckGracePeriod: 60
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      NewInstancesProtectedFromScaleIn: true
+      MaxSize: "10"
+      MinSize: "0"
+      DesiredCapacity: "0"
+
+  CapacityProvider1:
+    Type: "AWS::ECS::CapacityProvider"
+    Properties:
+      AutoScalingGroupProvider:
+        AutoScalingGroupArn: !Ref AutoScalingGroup1
+        ManagedScaling:
+          Status: ENABLED
+        ManagedTerminationProtection: ENABLED
+  
+  CapacityProvider2:
+    Type: "AWS::ECS::CapacityProvider"
+    Properties:
+      AutoScalingGroupProvider:
+        AutoScalingGroupArn: !Ref AutoScalingGroup2
+        ManagedScaling:
+          Status: ENABLED
+        ManagedTerminationProtection: ENABLED
+
   ECSCluster:
     Type: AWS::ECS::Cluster
-  # Properties: 
-  #   CapacityProviders: 
-  #     - String
-  #   ClusterName: String
-  #   ClusterSettings: 
-  #     - ClusterSettings
-  #   Configuration: 
-  #     ClusterConfiguration
-  #   DefaultCapacityProviderStrategy: 
-  #     - CapacityProviderStrategyItem
-  #   Tags: 
-  #     - Tag
+    Properties: 
+    #   ClusterName: String
+    #   ClusterSettings: 
+    #     - ClusterSettings
+    #   Configuration: 
+    #     ClusterConfiguration
+    #   DefaultCapacityProviderStrategy: 
+    #     - CapacityProviderStrategyItem
+      Tags:
+      - Key: resource-label
+        Value: !Ref ResourceTag
+
+  ClusterCPAssociation:
+    Type: "AWS::ECS::ClusterCapacityProviderAssociations"
+    Properties:
+      Cluster: !Ref ECSCluster
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT
+        - !Ref CapacityProvider1
+        - !Ref CapacityProvider2
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: !Ref CapacityProvider1
+          Base: 0
+          Weight: 1
+        - CapacityProvider: !Ref CapacityProvider2
+          Base: 0
+          Weight: 1
+        # - CapacityProvider: FARGATE
+        #   Base: 1
+        #   Weight: 0
+        # - CapacityProvider: FARGATE_SPOT
+        #   Weight: 1
+
+  EcsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ECS Security Group
+      VpcId: !Ref 'VPC'
+      Tags:
+      - Key: resource-label
+        Value: !Ref ResourceTag
+
+  EcsSecurityGroupHTTPinbound:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref 'EcsSecurityGroup'
+      IpProtocol: tcp
+      FromPort: '80'
+      ToPort: '80'
+      CidrIp: 0.0.0.0/0
+  CloudwatchLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join ['-', [ECSLogGroup, !Ref 'AWS::StackName']]
+      RetentionInDays: 14
 
 Outputs:
   ECSCluster:
-    Value: !Ref 'ECSCluster'
+    Value: !Ref ECSCluster
+  ECSServiceRole: 
+    Value: !Ref ECSServiceRole
+  EC2InstanceProfile:
+    Value: !Ref EC2InstanceProfile
