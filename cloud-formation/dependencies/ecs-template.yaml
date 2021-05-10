@@ -181,6 +181,59 @@ Resources:
       LogGroupName: !Join ['-', [ECSLogGroup, !Ref 'AWS::StackName']]
       RetentionInDays: 14
 
+#------------------------------------------------------------------------------
+# Application Tasks 
+#------------------------------------------------------------------------------
+
+  ApplicationTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties: 
+      Family: !Ref ResourceTag
+      ContainerDefinitions: 
+      - Name: wordpress-app
+        Cpu: 10
+        Essential: true
+        Image: wordpress:5.7.1
+        Memory: 400
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group: !Ref CloudwatchLogsGroup
+            awslogs-region: !Ref 'AWS::Region'
+            awslogs-stream-prefix: !Join ['', [ !Ref ResourceTag, wordpress-app] ]
+        Environment:
+          - Name: WORDPRESS_DB_HOST
+            Value: ''
+          - Name: WORDPRESS_DB_NAME
+            Value: ''
+          - Name: WORDPRESS_DB_PASSWORD
+            Value: ''
+          - Name: WORDPRESS_DB_USER
+            Value: ''
+        MountPoints:
+        - ContainerPath: /bitnami/wordpress
+          SourceVolume: wordpress_data
+        PortMappings:
+        - ContainerPort: 80
+      Volumes:
+      - Name: wordpress_data
+      ExecutionRoleArn: !Ref ECSServiceRole
+      NetworkMode: awsvpc
+      PidMode: task
+      PlacementConstraints: 
+        - Expression: !Sub '(attribute:ecs.subnet.id == ${Tier2Subnet1} ) || (attribute:ecs.subnet.id == ${Tier2Subnet2})'
+          Type: memberOf
+      RequiresCompatibilities: 
+        - EC2
+      Tags:
+      - Key: resource-label
+        Value: !Ref ResourceTag
+
+#------------------------------------------------------------------------------
+# ALB
+#------------------------------------------------------------------------------
+
+
 Outputs:
   ECSCluster:
     Value: !Ref ECSCluster
