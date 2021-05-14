@@ -16,35 +16,51 @@ Parameters:
   LatestAmiId:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id'
+  ECSClusterFor3tierApp:
+    Description: ECS Cluster Name
+    Type: String
+    Default: ECSClusterFor3tierApp
   ECSServiceRole:
     Description: IAM Role used for creating the ECS cluster
     Type: String
-    Default: iam-stack-ECSServiceRole-128MXW4J6T4NK
+    Default: ECSServiceRoleName
+    # default be deleted
+  ECSInstanceKeyPair:
+    Description: Key pair to be used for SSH into the ECS instances
+    Type: String
+    Default: ECSInstanceKeyPair
     # default be deleted
   VPC:
     Description: Reference to the VPC
     Type: String
-    Default: vpc-032eb6f22e899ffc4
+    Default: vpc-0ab5e464c7f3a4618
     # default be deleted
+
+  VPCSecurityGroup:
+    Description: Reference to the VPC SecurityGroup
+    Type: String
+    Default: sg-0738b847ccbede12b
+    # default be deleted
+
   Tier1Subnet1:
     Description: Reference to Tier1 Subnet 1
     Type: String
-    Default: subnet-0d403d6c7cd90d26b
+    Default: subnet-011e8801b4320e0e4
     # default be deleted
   Tier1Subnet2:
     Description: Reference to Tier1 Subnet 2
     Type: String
-    Default: subnet-07752117c27f6b8d5
+    Default: subnet-0a94a8c1a156e8d55
     # default be deleted
   Tier2Subnet1:
     Description: Reference to Tier2 Subnet 1
     Type: String
-    Default: subnet-0243f119c193903c1
+    Default: subnet-0884835f27dd00572
     # default be deleted
   Tier2Subnet2:
     Description: Reference to Tier2 Subnet 2
     Type: String
-    Default: subnet-008ab0ece34605a78
+    Default: subnet-068b6c2ef093afa40
     # default be deleted
 
 #------------------------------------------------------------------------------
@@ -68,41 +84,65 @@ Resources:
     Properties:
       LaunchTemplateData:
         ImageId: !Ref LatestAmiId
-        InstanceType: "t3.medium"
+        KeyName: !Ref ECSInstanceKeyPair
+        InstanceType: "t3.xlarge"
         IamInstanceProfile: 
           Name: !Ref EC2InstanceProfile
+        SecurityGroupIds: 
+          - !Ref EcsSecurityGroup
+          - !Ref VPCSecurityGroup
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash -xe
-            echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
+            echo ECS_CLUSTER=${ECSClusterFor3tierApp} >> /etc/ecs/ecs.config
+
 
   AutoScalingGroup1:
     Type: "AWS::AutoScaling::AutoScalingGroup"
     Properties:
-      AvailabilityZones:
-        - !Select [0, !GetAZs ""]
+      # AvailabilityZones:
+      #   - !Select [0, !GetAZs ""]
       HealthCheckGracePeriod: 60
       LaunchTemplate:
         LaunchTemplateId: !Ref LaunchTemplate
         Version: !GetAtt LaunchTemplate.LatestVersionNumber
-      NewInstancesProtectedFromScaleIn: true
+      NewInstancesProtectedFromScaleIn: false
+      VPCZoneIdentifier:
+        - !Ref Tier2Subnet1
       MaxSize: "10"
       MinSize: "0"
       DesiredCapacity: "0"
+      Tags:
+        - Key: resource-label
+          Value: !Ref ResourceTag
+          PropagateAtLaunch: True
+        - Key: Name
+          Value: ASG1-ECS-on-EC2
+          PropagateAtLaunch: True
   
   AutoScalingGroup2:
     Type: "AWS::AutoScaling::AutoScalingGroup"
     Properties:
-      AvailabilityZones:
-        - !Select [0, !GetAZs ""]
+      # AvailabilityZones:
+      #   - !Select [0, !GetAZs ""]
       HealthCheckGracePeriod: 60
       LaunchTemplate:
         LaunchTemplateId: !Ref LaunchTemplate
         Version: !GetAtt LaunchTemplate.LatestVersionNumber
-      NewInstancesProtectedFromScaleIn: true
+      NewInstancesProtectedFromScaleIn: false
+      VPCZoneIdentifier:
+        - !Ref Tier2Subnet2
       MaxSize: "10"
       MinSize: "0"
       DesiredCapacity: "0"
+      Tags:
+        - Key: resource-label
+          Value: !Ref ResourceTag
+          PropagateAtLaunch: True
+        - Key: Name
+          Value: ASG2-ECS-on-EC2
+          PropagateAtLaunch: True
+
 
   CapacityProvider1:
     Type: "AWS::ECS::CapacityProvider"
@@ -111,7 +151,7 @@ Resources:
         AutoScalingGroupArn: !Ref AutoScalingGroup1
         ManagedScaling:
           Status: ENABLED
-        ManagedTerminationProtection: ENABLED
+        ManagedTerminationProtection: DISABLED
   
   CapacityProvider2:
     Type: "AWS::ECS::CapacityProvider"
@@ -120,12 +160,12 @@ Resources:
         AutoScalingGroupArn: !Ref AutoScalingGroup2
         ManagedScaling:
           Status: ENABLED
-        ManagedTerminationProtection: ENABLED
+        ManagedTerminationProtection: DISABLED
 
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties: 
-    #   ClusterName: String
+      ClusterName: !Ref ECSClusterFor3tierApp
     #   ClusterSettings: 
     #     - ClusterSettings
     #   Configuration: 
@@ -135,6 +175,8 @@ Resources:
       Tags:
       - Key: resource-label
         Value: !Ref ResourceTag
+      - Key: Name
+        Value: ECSCluster-for-3tierApp
 
   ClusterCPAssociation:
     Type: "AWS::ECS::ClusterCapacityProviderAssociations"
@@ -166,6 +208,8 @@ Resources:
       Tags:
       - Key: resource-label
         Value: !Ref ResourceTag
+      - Key: Name
+        Value: SG-ECSCluster-for-3tierApp
 
   EcsSecurityGroupHTTPinbound:
     Type: AWS::EC2::SecurityGroupIngress
@@ -182,7 +226,7 @@ Resources:
       RetentionInDays: 14
 
 #------------------------------------------------------------------------------
-# Application Tasks 
+# Application Tasks & Service
 #------------------------------------------------------------------------------
 
   ApplicationTaskDefinition:
@@ -191,10 +235,10 @@ Resources:
       Family: !Ref ResourceTag
       ContainerDefinitions: 
       - Name: wordpress-app
-        Cpu: 10
+        Cpu: 512
         Essential: true
-        Image: wordpress:5.7.1
-        Memory: 400
+        Image: wordpress:5-php8.0
+        Memory: 1024
         LogConfiguration:
           LogDriver: awslogs
           Options:
@@ -211,7 +255,7 @@ Resources:
           - Name: WORDPRESS_DB_USER
             Value: ''
         MountPoints:
-        - ContainerPath: /bitnami/wordpress
+        - ContainerPath: /var/www/html
           SourceVolume: wordpress_data
         PortMappings:
         - ContainerPort: 80
@@ -220,14 +264,36 @@ Resources:
       ExecutionRoleArn: !Ref ECSServiceRole
       NetworkMode: awsvpc
       PidMode: task
-      PlacementConstraints: 
-        - Expression: !Sub '(attribute:ecs.subnet.id == ${Tier2Subnet1} ) || (attribute:ecs.subnet.id == ${Tier2Subnet2})'
-          Type: memberOf
+      # PlacementConstraints: 
+      #   - Expression: !Sub '(attribute:ecs.subnet.id == ${Tier2Subnet1} ) || (attribute:ecs.subnet.id == ${Tier2Subnet2})'
+      #     Type: memberOf
       RequiresCompatibilities: 
         - EC2
       Tags:
       - Key: resource-label
         Value: !Ref ResourceTag
+
+  WPService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: WPService
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref ApplicationTaskDefinition
+      DesiredCount: 4
+      CapacityProviderStrategy:
+        - CapacityProvider: !Ref CapacityProvider1
+          Base: 0
+          Weight: 1
+        - CapacityProvider: !Ref CapacityProvider2
+          Base: 0
+          Weight: 1
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups: 
+            - !Ref EcsSecurityGroup
+          Subnets: 
+            - !Ref Tier2Subnet1
+            - !Ref Tier2Subnet2
 
 #------------------------------------------------------------------------------
 # ALB

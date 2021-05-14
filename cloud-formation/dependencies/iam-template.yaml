@@ -14,11 +14,14 @@ Resources:
   ECSServiceRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: ECSServiceRoleName
       AssumeRolePolicyDocument:
         Statement:
         - Effect: Allow
           Principal:
-            Service: [ecs.amazonaws.com]
+            Service: [ecs.amazonaws.com, 
+            "ecs-tasks.amazonaws.com",
+            "ec2.amazonaws.com"]
           Action: ['sts:AssumeRole']
       Path: /
       Policies:
@@ -26,36 +29,49 @@ Resources:
         PolicyDocument:
           Statement:
           - Effect: Allow
-            Action: ['elasticloadbalancing:DeregisterInstancesFromLoadBalancer', 
-            'elasticloadbalancing:DeregisterTargets',
-            'elasticloadbalancing:Describe*', 
-            'elasticloadbalancing:RegisterInstancesWithLoadBalancer',
-            'elasticloadbalancing:RegisterTargets', 
-            'ec2:Describe*', 
-            'ec2:AuthorizeSecurityGroupEgress',
-            'ec2:AuthorizeSecurityGroupIngress',
-            'application-autoscaling:*',
-            'ecs:DescribeServices',
-            'ecs:UpdateService',
-            'logs:CreateLogStream',
-            'logs:DescribeLogStreams',
-            'logs:PutRetentionPolicy',
-            'logs:CreateLogGroup',
-            'cloudwatch:DescribeAlarms',
-            'cloudwatch:PutMetricAlarm',
-            'cloudwatch:DeleteAlarms',
-            'cloudwatch:DescribeAlarmHistory',
-            'cloudwatch:DescribeAlarmsForMetric',
-            'cloudwatch:GetMetricStatistics',
-            'cloudwatch:ListMetrics',
-            'cloudwatch:DisableAlarmActions',
-            'cloudwatch:EnableAlarmActions',
-            'iam:CreateServiceLinkedRole',
-            'sns:CreateTopic',
-            'sns:Subscribe',
-            'sns:Get*',
-            'sns:List*'
-          ]
+            Action: 
+              - 'elasticloadbalancing:DeregisterInstancesFromLoadBalancer'
+              - 'elasticloadbalancing:DeregisterTargets'
+              - 'elasticloadbalancing:Describe*'
+              - 'elasticloadbalancing:RegisterInstancesWithLoadBalancer'
+              - 'elasticloadbalancing:RegisterTargets'
+              - 'ec2:Describe*'
+              - 'ec2:AuthorizeSecurityGroupEgress'
+              - 'ec2:AuthorizeSecurityGroupIngress'
+              - 'application-autoscaling:*'
+              - 'ecs:CreateCluster'
+              - 'ecs:DescribeServices'
+              - 'ecs:UpdateService'
+              - 'ecs:DeregisterContainerInstance'
+              - 'ecs:DiscoverPollEndpoint'
+              - 'ecs:Poll'
+              - 'ecs:RegisterContainerInstance'
+              - 'ecs:StartTelemetrySession'
+              - 'ecs:UpdateContainerInstancesState'
+              - 'ecs:Submit*'
+              - 'ecr:GetAuthorizationToken'
+              - 'ecr:BatchCheckLayerAvailability'
+              - 'ecr:GetDownloadUrlForLayer'
+              - 'ecr:BatchGetImage'
+              - 'logs:CreateLogStream'
+              - 'logs:DescribeLogStreams'
+              - 'logs:PutLogEvents'
+              - 'logs:PutRetentionPolicy'
+              - 'logs:CreateLogGroup'
+              - 'cloudwatch:DescribeAlarms'
+              - 'cloudwatch:PutMetricAlarm'
+              - 'cloudwatch:DeleteAlarms'
+              - 'cloudwatch:DescribeAlarmHistory'
+              - 'cloudwatch:DescribeAlarmsForMetric'
+              - 'cloudwatch:GetMetricStatistics'
+              - 'cloudwatch:ListMetrics'
+              - 'cloudwatch:DisableAlarmActions'
+              - 'cloudwatch:EnableAlarmActions'
+              - 'iam:CreateServiceLinkedRole'
+              - 'sns:CreateTopic'
+              - 'sns:Subscribe'
+              - 'sns:Get*'
+              - 'sns:List*'
             Resource: '*'
 
 Outputs:
