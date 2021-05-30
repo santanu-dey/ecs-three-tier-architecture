@@ -63,6 +63,27 @@ Parameters:
     Default: subnet-068b6c2ef093afa40
     # default be deleted
 
+  WordPressDBHost:
+    Description: Host address from RDS Aurora 
+    Type: String
+    Default: 'db-stack-wpdatabasecluster-eohfom2g8q9f.cluster-cdtmsfxao7ut.ap-southeast-1.rds.amazonaws.com'
+    # default to be deleted
+  WordPressDBName:
+    Description: DB Name  WordPress DB
+    Type: String
+    Default: 'wpdb'
+    # makes sense to hardcode this  
+  WordPressDBUser:
+    Description: User for WordPress DB 
+    Type: String
+    Default: 'wpuser'
+    # default to be deleted
+  WordPressDBPassword:
+    Description: User for WordPress DB 
+    Type: String
+    Default: 'DBPa55w0rd'
+    # default to be deleted
+
 #------------------------------------------------------------------------------
 # Resources
 #------------------------------------------------------------------------------
@@ -220,7 +241,7 @@ Resources:
       ToPort: '80'
       CidrIp: 0.0.0.0/0
   # For docker bridge networking
-  EcsSecurityGroupHTTPinbound1:
+  EcsSecurityGroupHTTPinbound2:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       GroupId: !Ref 'EcsSecurityGroup'
@@ -256,13 +277,13 @@ Resources:
             awslogs-stream-prefix: !Join ['', [ !Ref ResourceTag, wordpress-app] ]
         Environment:
           - Name: WORDPRESS_DB_HOST
-            Value: ''
+            Value: !Sub ${WordPressDBHost}:3306
           - Name: WORDPRESS_DB_NAME
-            Value: ''
+            Value: !Ref WordPressDBName
           - Name: WORDPRESS_DB_PASSWORD
-            Value: ''
+            Value: !Ref WordPressDBPassword
           - Name: WORDPRESS_DB_USER
-            Value: ''
+            Value: !Ref WordPressDBUser
         MountPoints:
         - ContainerPath: /var/www/html
           SourceVolume: wordpress_data
@@ -378,6 +399,9 @@ Resources:
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 20
       HealthyThresholdCount: 2
+      TargetGroupAttributes:
+      - Key: stickiness.enabled
+        Value: true
 
   ListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
@@ -401,7 +425,7 @@ Outputs:
   ECSCluster:
     Value: !Ref ECSCluster
   ECSLoadBalancer:
-    Value: !Ref ECSLoadBalancer
+    Value: !GetAtt ECSLoadBalancer.DNSName
   ECSServiceRole: 
     Value: !Ref ECSServiceRole
   EC2InstanceProfile:

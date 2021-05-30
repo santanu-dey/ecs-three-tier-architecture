@@ -78,16 +78,14 @@ aws cloudformation delete-stack --stack-name ecs-three-tier-stack --profile boot
 
 
 #TODO
-
-* run tasks 
-* service
+* add rds / DB & db connectivity
 * add efs for volume and HA
-* add rds / DB
-* security group to tasks
+* nesting of templates 
+* encryption of storage and DB 
+* storing of secrets 
 * use route 53
 * what exact access are required by the CLI user profile? 
-* add caching
-* 
+
 
 
 

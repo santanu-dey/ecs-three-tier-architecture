@@ -71,10 +71,58 @@ Parameters:
     MaxLength: 18
     ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x
 
+  WordPressDBUser:
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+    ConstraintDescription: must be between 1 to 16 alphanumeric characters.
+    Description: The database admin account user name, between 1 to 16 alphanumeric characters.
+    MaxLength: '16'
+    MinLength: '1'
+    Type: String
+    Default: 'wpuser'
+    #Delete the default values here
+
+  WordPressDBName:
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+    ConstraintDescription: must be between 1 to 16 alphanumeric characters.
+    Description: The database admin account user name, between 1 to 16 alphanumeric characters.
+    MaxLength: '63'
+    MinLength: '1'
+    Type: String
+    Default: 'wpdb'
+    #Delete the default values here
+
+  WordPressDBPassword:
+    AllowedPattern: "[a-zA-Z0-9]+"
+    ConstraintDescription: must be between 8 to 41 alphanumeric characters.
+    Description: The database admin account password, between 8 to 41 alphanumeric characters.
+    MaxLength: '41'
+    MinLength: '8'
+    NoEcho: 'true'
+    Type: String
+    Default: 'DBPa$$123'
+    #Delete the default values here
+
   ResourceTag:
     Description: This value will be used for tagging all resources in the stack
     Type: String
     Default: ecs3tier
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Database Configuration
+        Parameters:
+          - WordPressDBUser
+          - WordPressDBName
+          - WordPressDBPassword
+    ParameterLabels:
+      WordPressDBName:
+        default: Wordpress Database Name
+      WordPressDBUser:
+        default: Wordpress Database Username
+      DatabasePassword:
+        default: Wordpress Database Password
 
 Resources:
 

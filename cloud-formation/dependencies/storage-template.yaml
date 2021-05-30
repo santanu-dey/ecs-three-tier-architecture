@@ -1,0 +1,143 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: >
+    Template for RDS Aurora DB
+
+#------------------------------------------------------------------------------
+# Parameters
+#------------------------------------------------------------------------------
+
+Parameters:
+  
+  ResourceTag:
+    Description: This value will be used for tagging all resources in the stack
+    Type: String
+    Default: ecs3tier
+
+  WordPressDBUser:
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+    ConstraintDescription: must be between 1 to 16 alphanumeric characters.
+    Description: The database admin account user name, between 1 to 16 alphanumeric characters.
+    MaxLength: '16'
+    MinLength: '1'
+    Type: String
+    Default: 'wpuser'
+    #Delete the default values here
+
+  WordPressDBName:
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+    ConstraintDescription: must be between 1 to 63 alphanumeric characters.
+    Description: The database admin account user name, between 1 to 63 alphanumeric characters.
+    MaxLength: '63'
+    MinLength: '1'
+    Type: String
+    Default: 'wpdb'
+    #Delete the default values here
+
+  WordPressDBPassword:
+    AllowedPattern: "[a-zA-Z0-9]+"
+    ConstraintDescription: must be between 8 to 41 alphanumeric characters.
+    Description: The database admin account password, between 8 to 41 alphanumeric characters.
+    MaxLength: '41'
+    MinLength: '8'
+    NoEcho: 'true'
+    Type: String
+    Default: 'DBPa55w0rd'
+    #Delete the default values here
+
+  VPC:
+    Description: Reference to the VPC
+    Type: String
+    Default: vpc-0ab5e464c7f3a4618
+    # default be deleted
+
+  Tier3Subnet1:
+    Description: Reference to Tier3 Subnet 1
+    Type: String
+    Default: subnet-03a31a5a75a95e13c
+    # default be deleted
+  
+  Tier3Subnet2:
+    Description: Reference to Tier3 Subnet 2
+    Type: String
+    Default: subnet-0197632c239723599
+    # default be deleted
+
+  Tier2Subnet1CIDR:
+    Description: CIDR block of Tier3 Subnet 1
+    Type: String
+    Default: 10.1.3.0/24
+
+  Tier2Subnet2CIDR:
+    Description: CIDR block of Tier3 Subnet 2
+    Type: String
+    Default: 10.1.4.0/24
+
+#------------------------------------------------------------------------------
+# Resournces
+#------------------------------------------------------------------------------
+
+Resources:
+
+  WPDatabaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: CloudFormation managed DB subnet group.
+      SubnetIds: 
+        - !Ref Tier3Subnet1
+        - !Ref Tier3Subnet2
+
+  WPDatabaseCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      Engine: aurora
+      EngineMode: serverless 
+      DatabaseName: !Ref WordPressDBName
+      MasterUsername: !Ref WordPressDBUser
+      MasterUserPassword: !Ref WordPressDBPassword 
+      BackupRetentionPeriod: 7
+      PreferredBackupWindow: 01:00-02:00
+      PreferredMaintenanceWindow: mon:03:00-mon:04:00
+      DBSubnetGroupName: !Ref WPDatabaseSubnetGroup
+      VpcSecurityGroupIds: 
+        - !Ref VPCSecurityGroupForWPDB 
+
+  VPCSecurityGroupForWPDB:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Database Security Group
+      VpcId: !Ref 'VPC'
+      Tags:
+      - Key: resource-label
+        Value: !Ref ResourceTag
+      - Key: Name
+        Value: SG-ECSCluster-for-3tierApp
+
+  DBSecurityGroupHTTPinbound1:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref VPCSecurityGroupForWPDB
+      IpProtocol: tcp
+      FromPort: '3306'
+      ToPort: '3306'
+      CidrIp: !Ref Tier2Subnet1CIDR
+
+  DBSecurityGroupHTTPinbound2:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref VPCSecurityGroupForWPDB
+      IpProtocol: tcp
+      FromPort: '3306'
+      ToPort: '3306'
+      CidrIp: !Ref Tier2Subnet2CIDR
+
+
+
+#------------------------------------------------------------------------------
+# Outputs
+#------------------------------------------------------------------------------
+
+Outputs:
+  WordPressDBHost:
+    Value: !GetAtt WPDatabaseCluster.Endpoint.Address
+ 
