@@ -66,22 +66,28 @@ Parameters:
   WordPressDBHost:
     Description: Host address from RDS Aurora 
     Type: String
-    Default: 'db-stack-wpdatabasecluster-eohfom2g8q9f.cluster-cdtmsfxao7ut.ap-southeast-1.rds.amazonaws.com'
+    Default: db-stack-wpdatabasecluster-14moel190h5qk.cluster-cdtmsfxao7ut.ap-southeast-1.rds.amazonaws.com
     # default to be deleted
   WordPressDBName:
     Description: DB Name  WordPress DB
     Type: String
-    Default: 'wpdb'
+    Default: wpdb
     # makes sense to hardcode this  
   WordPressDBUser:
     Description: User for WordPress DB 
     Type: String
-    Default: 'wpuser'
+    Default: wpuser
     # default to be deleted
   WordPressDBPassword:
     Description: User for WordPress DB 
     Type: String
-    Default: 'DBPa55w0rd'
+    Default: DBPa55w0rd
+    # default to be deleted
+
+  FileSystemID:
+    Description: File system to be used with the tasks
+    Type: String
+    Default: fs-9251fcd2
     # default to be deleted
 
 #------------------------------------------------------------------------------
@@ -292,6 +298,9 @@ Resources:
           HostPort: 0
       Volumes:
       - Name: wordpress_data
+        EFSVolumeConfiguration:
+          FilesystemId: !Ref FileSystemID
+
       ExecutionRoleArn: !Ref ECSServiceRole
       # NetworkMode: awsvpc
       NetworkMode: bridge
