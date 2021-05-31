@@ -47,7 +47,7 @@ Either of the commands below should work
 
 ```
 aws cloudformation create-stack \
---stack-name ecs-three-tier-stack \
+--stack-name three-tier-stack \
 --template-url https://cloud-formation-template.s3.amazonaws.com/ecs-three-tier-architecture-base.yaml  \
 --parameters ParameterKey=ResourceBucket,ParameterValue=cloud-formation-template \
 --capabilities CAPABILITY_NAMED_IAM \
@@ -78,8 +78,6 @@ aws cloudformation delete-stack --stack-name ecs-three-tier-stack --profile boot
 
 
 #TODO
-* add rds / DB & db connectivity
-* add efs for volume and HA
 * nesting of templates 
 * encryption of storage and DB 
 * storing of secrets 

@@ -14,8 +14,8 @@ Parameters:
     Type: String
     Default: ecs3tier
   LatestAmiId:
+    Description: AMI ID to be used for ECS EC2 instances
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
-    Default: '/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id'
   ECSClusterFor3tierApp:
     Description: ECS Cluster Name
     Type: String
@@ -23,25 +23,17 @@ Parameters:
   ECSServiceRole:
     Description: IAM Role used for creating the ECS cluster
     Type: String
-    Default: ECSServiceRoleName
-    # default be deleted
   ECSInstanceKeyPair:
     Description: Key pair to be used for SSH into the ECS instances
     Type: String
-    Default: ECSInstanceKeyPair
-    # default be deleted
   VPC:
     Description: Reference to the VPC
     Type: String
     Default: vpc-0ab5e464c7f3a4618
     # default be deleted
-
   VPCSecurityGroup:
-    Description: Reference to the VPC SecurityGroup
+    Description: Reference to the default VPC SecurityGroup
     Type: String
-    Default: sg-0738b847ccbede12b
-    # default be deleted
-
   Tier1Subnet1:
     Description: Reference to Tier1 Subnet 1
     Type: String
@@ -62,33 +54,21 @@ Parameters:
     Type: String
     Default: subnet-068b6c2ef093afa40
     # default be deleted
-
   WordPressDBHost:
     Description: Host address from RDS Aurora 
     Type: String
-    Default: db-stack-wpdatabasecluster-14moel190h5qk.cluster-cdtmsfxao7ut.ap-southeast-1.rds.amazonaws.com
-    # default to be deleted
   WordPressDBName:
     Description: DB Name  WordPress DB
     Type: String
-    Default: wpdb
-    # makes sense to hardcode this  
   WordPressDBUser:
     Description: User for WordPress DB 
     Type: String
-    Default: wpuser
-    # default to be deleted
   WordPressDBPassword:
     Description: User for WordPress DB 
     Type: String
-    Default: DBPa55w0rd
-    # default to be deleted
-
   FileSystemID:
     Description: File system to be used with the tasks
     Type: String
-    Default: fs-9251fcd2
-    # default to be deleted
 
 #------------------------------------------------------------------------------
 # Resources
@@ -173,6 +153,7 @@ Resources:
 
   CapacityProvider1:
     Type: "AWS::ECS::CapacityProvider"
+    DependsOn: AutoScalingGroup1
     Properties:
       AutoScalingGroupProvider:
         AutoScalingGroupArn: !Ref AutoScalingGroup1
@@ -182,6 +163,7 @@ Resources:
   
   CapacityProvider2:
     Type: "AWS::ECS::CapacityProvider"
+    DependsOn: AutoScalingGroup2
     Properties:
       AutoScalingGroupProvider:
         AutoScalingGroupArn: !Ref AutoScalingGroup2
@@ -191,6 +173,9 @@ Resources:
 
   ECSCluster:
     Type: AWS::ECS::Cluster
+    DependsOn: 
+      - AutoScalingGroup1
+      - AutoScalingGroup2
     Properties: 
       ClusterName: !Ref ECSClusterFor3tierApp
     #   ClusterSettings: 

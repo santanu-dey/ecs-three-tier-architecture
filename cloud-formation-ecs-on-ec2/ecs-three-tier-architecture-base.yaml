@@ -8,6 +8,22 @@ Parameters:
     Type: String
     Description: S3 Bucket where the deployent dependent cloudformation resources are stored
 
+  EC2AmiIdForECS:
+    Description: AMI ID to be used for ECS EC2 instances
+    Type: String
+    Default: '/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id'
+
+  ECSClusterFor3tierApp:
+    Description: ECS Cluster Name
+    Type: String
+    Default: ECSClusterFor3tierApp
+
+  ECSInstanceKeyPair:
+    Description: Key pair to be used for SSH into the bastion host & ECS instances
+    Type: String
+    Default: ECSInstanceKeyPair
+    # default be deleted
+
   VpcCIDR:
     Description: Please enter the IP range (CIDR notation) for this VPC
     Type: String
@@ -99,7 +115,6 @@ Parameters:
     MinLength: '8'
     NoEcho: 'true'
     Type: String
-    Default: 'DBPa$$123'
     #Delete the default values here
 
   ResourceTag:
@@ -138,12 +153,12 @@ Resources:
       - Key: resource-label
         Value: !Ref ResourceTag
 
-  # Networking
+  # Networking stack
   Networking:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
     Properties:
-      TemplateURL:  !Join ['', ['https://', !Ref 'ResourceBucket', '.s3.amazonaws.com', /dependencies/networking-template.yaml]]
+      TemplateURL:  !Join ['', ['https://', !Ref 'ResourceBucket', '.s3.amazonaws.com', '/dependencies/networking-template.yaml']]
       Parameters: 
         VpcCIDR: !Ref VpcCIDR
         Tier1Subnet1CIDR: !Ref Tier1Subnet1CIDR
@@ -157,19 +172,66 @@ Resources:
       - Key: resource-label
         Value: !Ref ResourceTag
 
-  # ECSCluster
+  # Storage stack
+  Storage:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    Properties:
+      TemplateURL:  !Join ['', ['https://', !Ref 'ResourceBucket', '.s3.amazonaws.com', '/dependencies/storage-template.yaml']]
+      Parameters: 
+        ResourceTag: !Ref ResourceTag
+        WordPressDBUser: !Ref WordPressDBUser
+        WordPressDBName: !Ref WordPressDBName
+        WordPressDBPassword: !Ref WordPressDBPassword
+        VPC: 
+          Fn::GetAtt:
+          - Networking
+          - Outputs.VPC
+        Tier2Subnet1: 
+          Fn::GetAtt:  
+          - Networking
+          - Outputs.Tier2Subnet1
+        Tier2Subnet2:
+          Fn::GetAtt:  
+          - Networking
+          - Outputs.Tier2Subnet2
+        Tier3Subnet1:
+          Fn::GetAtt:  
+          - Networking
+          - Outputs.Tier3Subnet1          
+        Tier3Subnet2:
+          Fn::GetAtt:  
+          - Networking
+          - Outputs.Tier3Subnet2
+        Tier2Subnet1CIDR: !Ref Tier2Subnet1CIDR
+        Tier2Subnet2CIDR: !Ref Tier2Subnet2CIDR
+      Tags:
+      - Key: resource-label
+        Value: !Ref ResourceTag
+
+  # ECSCluster stack
   ECSCluster:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
     Properties:
-      TemplateURL:  !Join ['', ['https://', !Ref 'ResourceBucket', '.s3.amazonaws.com', /dependencies/ecs-template.yaml]]
+      TemplateURL:  !Join ['', ['https://', !Ref 'ResourceBucket', '.s3.amazonaws.com', '/dependencies/ecs-on-ec2-template.yaml']]
       Parameters: 
         ResourceTag: !Ref ResourceTag
-      Parameters: 
+        LatestAmiId: !Ref EC2AmiIdForECS
+        ECSClusterFor3tierApp: !Ref ECSClusterFor3tierApp
         ECSServiceRole: 
           Fn::GetAtt: 
           - IAMRoles
           - Outputs.ECSServiceRole
+        ECSInstanceKeyPair: !Ref ECSInstanceKeyPair
+        VPC: 
+          Fn::GetAtt:
+          - Networking
+          - Outputs.VPC
+        VPCSecurityGroup: 
+          Fn::GetAtt:
+          - Networking
+          - Outputs.VPCSecurityGroup
         Tier1Subnet1:
           Fn::GetAtt:  
           - Networking
@@ -186,15 +248,25 @@ Resources:
           Fn::GetAtt:
           - Networking
           - Outputs.Tier2Subnet2
-        VPC: 
+        WordPressDBHost:
           Fn::GetAtt:
-          - Networking
-          - Outputs.Tier2Subnet1
+          - Storage
+          - Outputs.WordPressDBHost
+        WordPressDBName: !Ref WordPressDBName
+        WordPressDBUser: !Ref WordPressDBUser
+        WordPressDBPassword: !Ref WordPressDBPassword
+        FileSystemID:
+          Fn::GetAtt:
+          - Storage
+          - Outputs.FileSystemID
       Tags:
       - Key: resource-label
         Value: !Ref ResourceTag
 
 Outputs:
-  ResourceBucket:
-    Value: !Ref ResourceBucket         
-    Description: S3 Bucket where the deployent dependent cloudformation resources are storedYou can refer to any resource from the template.
+  ECSLoadBalancerEndPoint:
+    Description: ALB Endpoint (http URL) to request the application. 
+    Value:
+      Fn::GetAtt:
+        - ECSCluster
+        - Outputs.ECSLoadBalancer
