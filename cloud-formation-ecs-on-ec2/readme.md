@@ -46,12 +46,12 @@ aws s3api put-object-acl --bucket cloud-formation-template --key dependencies/ne
 Either of the commands below should work
 
 ```
-aws cloudformation create-stack \
---stack-name three-tier-stack \
+santadey@a483e7807e92 cloud-formation % aws cloudformation create-stack \
+--stack-name three-tier-app \
 --template-url https://cloud-formation-template.s3.amazonaws.com/ecs-three-tier-architecture-base.yaml  \
 --parameters ParameterKey=ResourceBucket,ParameterValue=cloud-formation-template \
---capabilities CAPABILITY_NAMED_IAM \
---profile bootcamp
+ParameterKey=WordPressDBPassword,ParameterValue=yourpassword \
+--capabilities CAPABILITY_NAMED_IAM --profile bootcamp
 ```
 
 
@@ -78,12 +78,10 @@ aws cloudformation delete-stack --stack-name ecs-three-tier-stack --profile boot
 
 
 #TODO
-* nesting of templates 
 * encryption of storage and DB 
 * storing of secrets 
 * use route 53
-* what exact access are required by the CLI user profile? 
-
+* tighten the IAM role 
 
 
 
