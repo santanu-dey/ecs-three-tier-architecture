@@ -3,12 +3,19 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: >
     This template contains IAM elements needed for the whole stack
 
+#------------------------------------------------------------------------------
+# Parameters
+#------------------------------------------------------------------------------
+
 Parameters:
 
   ResourceTag:
     Description: This value will be used for tagging all resources in the stack
     Type: String
-    Default: ecs3tier
+
+#------------------------------------------------------------------------------
+# Resources
+#------------------------------------------------------------------------------
 
 Resources:
   ECSServiceRole:
@@ -19,9 +26,10 @@ Resources:
         Statement:
         - Effect: Allow
           Principal:
-            Service: [ecs.amazonaws.com, 
-            "ecs-tasks.amazonaws.com",
-            "ec2.amazonaws.com"]
+            Service: 
+              - 'ecs.amazonaws.com'
+              - 'ecs-tasks.amazonaws.com'
+              - 'ec2.amazonaws.com'
           Action: ['sts:AssumeRole']
       Path: /
       Policies:
@@ -74,8 +82,10 @@ Resources:
               - 'sns:List*'
             Resource: '*'
 
+#------------------------------------------------------------------------------
+# Outputs
+#------------------------------------------------------------------------------
+
 Outputs:
   ECSServiceRole:
     Value: !Ref ECSServiceRole
-    # Export: 
-    #   Name: ECSServiceRoleForECS3TierStack

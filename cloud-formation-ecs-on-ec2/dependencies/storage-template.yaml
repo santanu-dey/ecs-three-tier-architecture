@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 
 Description: >
-    Template for RDS Aurora DB
+    Template for RDS Aurora DB & EFS 
 
 #------------------------------------------------------------------------------
 # Parameters
@@ -21,7 +21,7 @@ Parameters:
 
   WordPressDBPassword:
     Type: String
-    NoEcho: 'true'
+    NoEcho: true
   
   VPC:
     Description: Reference to the VPC
@@ -83,26 +83,26 @@ Resources:
       - Key: resource-label
         Value: !Ref ResourceTag
       - Key: Name
-        Value: ECS3-tier-Aurora-Serverless-DB
+        Value: Aurora-Serverless-DB-for-ECS-3-Tier-App
 
   VPCSecurityGroupForWPDB:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Database Security Group
-      VpcId: !Ref 'VPC'
+      VpcId: !Ref VPC
       Tags:
       - Key: resource-label
         Value: !Ref ResourceTag
       - Key: Name
-        Value: SG-ECSCluster-for-3tierApp
+        Value: SG-DB-for-ECS-3-Tier-App
 
   DBSecurityGroupHTTPinbound1:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       GroupId: !Ref VPCSecurityGroupForWPDB
       IpProtocol: tcp
-      FromPort: '3306'
-      ToPort: '3306'
+      FromPort: 3306
+      ToPort: 3306
       CidrIp: !Ref Tier2Subnet1CIDR
 
   DBSecurityGroupHTTPinbound2:
@@ -110,8 +110,8 @@ Resources:
     Properties:
       GroupId: !Ref VPCSecurityGroupForWPDB
       IpProtocol: tcp
-      FromPort: '3306'
-      ToPort: '3306'
+      FromPort: 3306
+      ToPort: 3306
       CidrIp: !Ref Tier2Subnet2CIDR
   
   EFSSecurityGroup:
@@ -122,18 +122,18 @@ Resources:
       GroupDescription: Security group for mount target
       SecurityGroupIngress:
       - IpProtocol: tcp
-        FromPort: '2049'
-        ToPort: '2049'
+        FromPort: 2049
+        ToPort: 2049
         CidrIp: !Ref Tier2Subnet1CIDR
       - IpProtocol: tcp
-        FromPort: '2049'
-        ToPort: '2049'
+        FromPort: 2049
+        ToPort: 2049
         CidrIp: !Ref Tier2Subnet2CIDR
       Tags:
       - Key: resource-label
         Value: !Ref ResourceTag
       - Key: Name
-        Value: SG-EFSFileSystem-for-3tierApp
+        Value: SG-EFSFileSystem-for-ECS-3-Tier-App
 
   WebServerFileSystem:
     Type: AWS::EFS::FileSystem
@@ -146,7 +146,7 @@ Resources:
         - Key: resource-label
           Value: !Ref ResourceTag
         - Key: Name
-          Value: EFSFileSystem-for-3tierApp
+          Value: EFSFileSystem-for-ECS-3-Tier-App
   
   EFSMountTargetTier2Subnet1:
     Type: AWS::EFS::MountTarget
@@ -163,7 +163,6 @@ Resources:
       SubnetId: !Ref Tier2Subnet2
       SecurityGroups: 
         - !Ref EFSSecurityGroup
-
 
 
 #------------------------------------------------------------------------------

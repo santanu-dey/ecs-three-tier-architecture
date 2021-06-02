@@ -3,7 +3,17 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: >
     This template deploys a sample 3-tier application using Amazon ECS
 
+#------------------------------------------------------------------------------
+# Parameters
+#------------------------------------------------------------------------------
+
 Parameters:
+
+  ResourceTag:
+    Description: This value will be used for tagging all resources in the stack
+    Type: String
+    Default: ECS-3-Tier-App
+  
   ResourceBucket:
     Type: String
     Description: S3 Bucket where the deployent dependent cloudformation resources are stored
@@ -91,36 +101,32 @@ Parameters:
     AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
     ConstraintDescription: must be between 1 to 16 alphanumeric characters.
     Description: The database admin account user name, between 1 to 16 alphanumeric characters.
-    MaxLength: '16'
-    MinLength: '1'
+    MaxLength: 16
+    MinLength: 1
     Type: String
-    Default: 'wpuser'
+    Default: wpuser
     #Delete the default values here
 
   WordPressDBName:
     AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
     ConstraintDescription: must be between 1 to 16 alphanumeric characters.
     Description: The database admin account user name, between 1 to 16 alphanumeric characters.
-    MaxLength: '63'
-    MinLength: '1'
+    MaxLength: 63
+    MinLength: 1
     Type: String
-    Default: 'wpdb'
+    Default: wpdb
     #Delete the default values here
 
   WordPressDBPassword:
     AllowedPattern: "[a-zA-Z0-9]+"
     ConstraintDescription: must be between 8 to 41 alphanumeric characters.
     Description: The database admin account password, between 8 to 41 alphanumeric characters.
-    MaxLength: '41'
-    MinLength: '8'
-    NoEcho: 'true'
+    MaxLength: 41
+    MinLength: 8
+    NoEcho: true
     Type: String
     #Delete the default values here
 
-  ResourceTag:
-    Description: This value will be used for tagging all resources in the stack
-    Type: String
-    Default: ecs3tier
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -138,6 +144,11 @@ Metadata:
         default: Wordpress Database Username
       DatabasePassword:
         default: Wordpress Database Password
+
+
+#------------------------------------------------------------------------------
+# Resources:  Nested stacks
+#------------------------------------------------------------------------------
 
 Resources:
 
@@ -263,10 +274,20 @@ Resources:
       - Key: resource-label
         Value: !Ref ResourceTag
 
+# ------------------------------------------------------------------------------
+# Overall outputs from all stacks 
+# ------------------------------------------------------------------------------
+
 Outputs:
-  ECSLoadBalancerEndPoint:
+  ALBEndPoint:
     Description: ALB Endpoint (http URL) to request the application. 
     Value:
       Fn::GetAtt:
         - ECSCluster
         - Outputs.ECSLoadBalancer
+  ECSCluster:
+    Description: ECS Cluster on Fargate
+    Value:
+      Fn::GetAtt:
+        - ECSCluster
+        - Outputs.ECSCluster

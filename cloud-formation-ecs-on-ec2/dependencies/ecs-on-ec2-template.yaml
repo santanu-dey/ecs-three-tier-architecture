@@ -12,14 +12,12 @@ Parameters:
   ResourceTag:
     Description: This value will be used for tagging all resources in the stack
     Type: String
-    Default: ecs3tier
   LatestAmiId:
     Description: AMI ID to be used for ECS EC2 instances
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
   ECSClusterFor3tierApp:
     Description: ECS Cluster Name
     Type: String
-    Default: ECSClusterFor3tierApp
   ECSServiceRole:
     Description: IAM Role used for creating the ECS cluster
     Type: String
@@ -29,31 +27,21 @@ Parameters:
   VPC:
     Description: Reference to the VPC
     Type: String
-    Default: vpc-0ab5e464c7f3a4618
-    # default be deleted
   VPCSecurityGroup:
     Description: Reference to the default VPC SecurityGroup
     Type: String
   Tier1Subnet1:
     Description: Reference to Tier1 Subnet 1
     Type: String
-    Default: subnet-011e8801b4320e0e4
-    # default be deleted
   Tier1Subnet2:
     Description: Reference to Tier1 Subnet 2
     Type: String
-    Default: subnet-0a94a8c1a156e8d55
-    # default be deleted
   Tier2Subnet1:
     Description: Reference to Tier2 Subnet 1
     Type: String
-    Default: subnet-0884835f27dd00572
-    # default be deleted
   Tier2Subnet2:
     Description: Reference to Tier2 Subnet 2
     Type: String
-    Default: subnet-068b6c2ef093afa40
-    # default be deleted
   WordPressDBHost:
     Description: Host address from RDS Aurora 
     Type: String
@@ -66,6 +54,7 @@ Parameters:
   WordPressDBPassword:
     Description: User for WordPress DB 
     Type: String
+    NoEcho: true
   FileSystemID:
     Description: File system to be used with the tasks
     Type: String
@@ -105,7 +94,7 @@ Resources:
 
 
   AutoScalingGroup1:
-    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       # AvailabilityZones:
       #   - !Select [0, !GetAZs ""]
@@ -124,11 +113,11 @@ Resources:
           Value: !Ref ResourceTag
           PropagateAtLaunch: True
         - Key: Name
-          Value: ASG1-ECS-on-EC2
+          Value: ASG1-for-ECS-3-Tier-App
           PropagateAtLaunch: True
   
   AutoScalingGroup2:
-    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       # AvailabilityZones:
       #   - !Select [0, !GetAZs ""]
@@ -147,12 +136,12 @@ Resources:
           Value: !Ref ResourceTag
           PropagateAtLaunch: True
         - Key: Name
-          Value: ASG2-ECS-on-EC2
+          Value: ASG2-for-ECS-3-Tier-App
           PropagateAtLaunch: True
 
 
   CapacityProvider1:
-    Type: "AWS::ECS::CapacityProvider"
+    Type: AWS::ECS::CapacityProvider
     DependsOn: AutoScalingGroup1
     Properties:
       AutoScalingGroupProvider:
@@ -162,7 +151,7 @@ Resources:
         ManagedTerminationProtection: DISABLED
   
   CapacityProvider2:
-    Type: "AWS::ECS::CapacityProvider"
+    Type: AWS::ECS::CapacityProvider
     DependsOn: AutoScalingGroup2
     Properties:
       AutoScalingGroupProvider:
@@ -178,20 +167,14 @@ Resources:
       - AutoScalingGroup2
     Properties: 
       ClusterName: !Ref ECSClusterFor3tierApp
-    #   ClusterSettings: 
-    #     - ClusterSettings
-    #   Configuration: 
-    #     ClusterConfiguration
-    #   DefaultCapacityProviderStrategy: 
-    #     - CapacityProviderStrategyItem
       Tags:
       - Key: resource-label
         Value: !Ref ResourceTag
       - Key: Name
-        Value: ECSCluster-for-3tierApp
+        Value: ECSCluster-for-ECS-3-Tier-App
 
   ClusterCPAssociation:
-    Type: "AWS::ECS::ClusterCapacityProviderAssociations"
+    Type: AWS::ECS::ClusterCapacityProviderAssociations
     Properties:
       Cluster: !Ref ECSCluster
       CapacityProviders:
@@ -206,11 +189,6 @@ Resources:
         - CapacityProvider: !Ref CapacityProvider2
           Base: 0
           Weight: 1
-        # - CapacityProvider: FARGATE
-        #   Base: 1
-        #   Weight: 0
-        # - CapacityProvider: FARGATE_SPOT
-        #   Weight: 1
 
   EcsSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -221,7 +199,7 @@ Resources:
       - Key: resource-label
         Value: !Ref ResourceTag
       - Key: Name
-        Value: SG-ECSCluster-for-3tierApp
+        Value: SG-ECSCluster-for-ECS-3-Tier-App
 
   EcsSecurityGroupHTTPinbound1:
     Type: AWS::EC2::SecurityGroupIngress
@@ -231,6 +209,7 @@ Resources:
       FromPort: '80'
       ToPort: '80'
       CidrIp: 0.0.0.0/0
+  
   # For docker bridge networking
   EcsSecurityGroupHTTPinbound2:
     Type: AWS::EC2::SecurityGroupIngress
@@ -240,6 +219,7 @@ Resources:
       FromPort: '32768'
       ToPort: '61000'
       CidrIp: 0.0.0.0/0
+  
   CloudwatchLogsGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -255,7 +235,7 @@ Resources:
     Properties: 
       Family: !Ref ResourceTag
       ContainerDefinitions: 
-      - Name: wordpress-app
+      - Name: wordpress-for-ecs-app
         Cpu: 512
         Essential: true
         Image: wordpress:5-php8.0
@@ -285,29 +265,26 @@ Resources:
       - Name: wordpress_data
         EFSVolumeConfiguration:
           FilesystemId: !Ref FileSystemID
-
-      ExecutionRoleArn: !Ref ECSServiceRole
-      # NetworkMode: awsvpc
+      ExecutionRoleArn: !Ref ECSServiceRole 
       NetworkMode: bridge
       PidMode: task
-      # PlacementConstraints: 
-      #   - Expression: !Sub '(attribute:ecs.subnet.id == ${Tier2Subnet1} ) || (attribute:ecs.subnet.id == ${Tier2Subnet2})'
-      #     Type: memberOf
       RequiresCompatibilities: 
         - EC2
       Tags:
       - Key: resource-label
         Value: !Ref ResourceTag
+      - Key: Name
+        Value: Task-For-ECS-3-Tier-App
 
 
 
   WPService:
     Type: AWS::ECS::Service
     Properties:
-      ServiceName: WPService
+      ServiceName: WPService-For-ECS-3-Tier-App
       Cluster: !Ref ECSCluster
       TaskDefinition: !Ref ApplicationTaskDefinition
-      DesiredCount: 4
+      DesiredCount: 8
       LoadBalancers:
       - ContainerName: "wordpress-app"
         ContainerPort: 80
@@ -319,13 +296,6 @@ Resources:
         - CapacityProvider: !Ref CapacityProvider2
           Base: 0
           Weight: 1
-      # NetworkConfiguration:
-      #   AwsvpcConfiguration:
-      #     SecurityGroups: 
-      #       - !Ref EcsSecurityGroup
-      #     Subnets: 
-      #       - !Ref Tier2Subnet1
-      #       - !Ref Tier2Subnet2
 
 #------------------------------------------------------------------------------
 # ALB
@@ -340,7 +310,7 @@ Resources:
       - Key: resource-label
         Value: !Ref ResourceTag
       - Key: Name
-        Value: SG-for-ALB-3tierApp
+        Value: SG-for-ALB-ECS-3-Tier-App
 
   ALBSecurityGroupHTTPinbound:
     Type: AWS::EC2::SecurityGroupIngress
@@ -359,7 +329,7 @@ Resources:
   ECSLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name: LB-for-ecs3tierApp
+      Name: ALB-for-ECS-3-Tier-App
       Subnets: 
         - !Ref Tier1Subnet1
         - !Ref Tier2Subnet2
@@ -384,6 +354,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       VpcId: !Ref VPC
+      Name: TargetGroup-ECS-3-Tier-App
       Port: 80
       Protocol: HTTP
       Matcher:
@@ -396,6 +367,9 @@ Resources:
       TargetGroupAttributes:
       - Key: stickiness.enabled
         Value: true
+      Tags:
+      - Key: resource-label
+        Value: !Ref ResourceTag
 
   ListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
