@@ -92,7 +92,6 @@ Resources:
             #!/bin/bash -xe
             echo ECS_CLUSTER=${ECSClusterFor3tierApp} >> /etc/ecs/ecs.config
 
-
   AutoScalingGroup1:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
@@ -139,7 +138,6 @@ Resources:
           Value: ASG2-for-ECS-3-Tier-App
           PropagateAtLaunch: True
 
-
   CapacityProvider1:
     Type: AWS::ECS::CapacityProvider
     DependsOn: AutoScalingGroup1
@@ -175,11 +173,10 @@ Resources:
 
   ClusterCPAssociation:
     Type: AWS::ECS::ClusterCapacityProviderAssociations
+    DependsOn: ECSCluster
     Properties:
       Cluster: !Ref ECSCluster
       CapacityProviders:
-        - FARGATE
-        - FARGATE_SPOT
         - !Ref CapacityProvider1
         - !Ref CapacityProvider2
       DefaultCapacityProviderStrategy:
@@ -276,8 +273,6 @@ Resources:
       - Key: Name
         Value: Task-For-ECS-3-Tier-App
 
-
-
   WPService:
     Type: AWS::ECS::Service
     Properties:
@@ -286,7 +281,7 @@ Resources:
       TaskDefinition: !Ref ApplicationTaskDefinition
       DesiredCount: 8
       LoadBalancers:
-      - ContainerName: "wordpress-app"
+      - ContainerName: wordpress-for-ecs-app
         ContainerPort: 80
         TargetGroupArn: !Ref ECSTargetGroup
       CapacityProviderStrategy:
